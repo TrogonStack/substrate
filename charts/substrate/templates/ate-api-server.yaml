@@ -129,11 +129,31 @@ spec:
           value: {{ .Values.rustfs.accessKey | quote }}
         - name: AWS_SECRET_ACCESS_KEY
           value: {{ .Values.rustfs.secretKey | quote }}
+{{- else if .Values.objectStore.existingSecret }}
+{{- if .Values.objectStore.region }}
+        - name: AWS_REGION
+          value: {{ .Values.objectStore.region | quote }}
+{{- end }}
+{{- if .Values.objectStore.endpoint }}
+        - name: AWS_ENDPOINT_URL
+          value: {{ .Values.objectStore.endpoint | quote }}
+{{- end }}
+{{- if .Values.objectStore.usePathStyle }}
+        - name: AWS_S3_USE_PATH_STYLE
+          value: "true"
+{{- end }}
+{{- end }}
+{{- with .Values.ateApi.extraEnv }}
+{{ toYaml . | indent 8 }}
 {{- end }}
         envFrom:
         - configMapRef:
             name: {{ .Values.ateApiServerEnvVarsConfigMap }}
             optional: true
+{{- if and (not .Values.rustfs.enabled) .Values.objectStore.existingSecret }}
+        - secretRef:
+            name: {{ .Values.objectStore.existingSecret }}
+{{- end }}
         volumeMounts:
         - { name: servicedns,          mountPath: /run/servicedns.podcert.ate.dev }
         - { name: actor-id-jwt-pool,   mountPath: /run/actor-id-jwt-pool }

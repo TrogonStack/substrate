@@ -45,10 +45,15 @@ See `values.yaml` for the full set; the important keys:
 | `postgres.schema` | `public` | Store the Substrate tables in this PostgreSQL schema |
 | `postgres.storageSize` | `1Gi` | In-cluster PostgreSQL PVC size |
 | `rustfs.enabled` | `true` | Deploy an in-cluster S3-compatible RustFS bucket for snapshots |
+| `objectStore.existingSecret` | `""` | Secret with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (and optionally `AWS_REGION`, `AWS_ENDPOINT_URL`, `AWS_S3_USE_PATH_STYLE`), consumed via `envFrom` for an external S3-compatible store when `rustfs.enabled=false` |
+| `objectStore.region` | `""` | `AWS_REGION`, only rendered when set; otherwise the Secret supplies it |
+| `objectStore.endpoint` | `""` | `AWS_ENDPOINT_URL`, only rendered when set; otherwise the Secret supplies it |
+| `objectStore.usePathStyle` | `false` | `AWS_S3_USE_PATH_STYLE`, only rendered when true; otherwise the Secret supplies it |
 | `atelet.storageBackend` | `s3` | Default snapshot backend, wired to RustFS when `rustfs.enabled=true` |
 | `atelet.gcpAuthForImagePulls` | `false` | Enable only when using GCP registry auth |
 | `credentialProvider.namespacePolicies` | `[]` | Default-deny atespace-to-namespace grants; the chart includes get-only Secret RBAC for the provider |
 | `ateApi.extraArgs` | `[]` | Additional command-line arguments appended to the ateapi defaults |
+| `ateApi.extraEnv` | `[]` | Additional environment variables appended to the ateapi defaults |
 | `otel.endpoint` | `""` | Set to an OTLP endpoint to export traces, metrics, the actor lifecycle events and the router access log |
 | `otel.traces.enabled` | `true` | Set to `false` to export no traces from the router; the Go components do not honor this yet |
 | `otel.traces.endpoint` | `""` | OTLP endpoint for traces, overriding `otel.endpoint` |
