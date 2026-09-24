@@ -112,8 +112,9 @@ imagePullSecrets: []
 image:
   # Registry host for the component images, and nothing else. To change
   # environments, change only this value or global.imageRegistry, which overrides
-  # it. A path inside `registry` fails the render, and the error names this
-  # split.
+  # it. A pull-through mirror may include a path (mirror.example:8083/ghcr.io),
+  # but a registry that still ends in image.repository fails the render, and the
+  # error names this split.
   registry: ghcr.io
   # Image path prefix under the registry, ahead of each component name. The path
   # is identical on every registry that serves the images. A mirror copies the

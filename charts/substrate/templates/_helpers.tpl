@@ -160,15 +160,21 @@ are emitted without a tag, letting `ko resolve` supply the digest at build time.
 {{/* image.registry used to carry the full prefix (ghcr.io/kagent-dev/substrate).
      It is now the registry host only, joined onto image.repository -- the same
      registry/repository split every kagent-family chart uses, so one
-     global.imageRegistry value redirects them all. A values file still carrying
-     a path in registry would render a doubled prefix that fails only at pod
-     start, so it fails the render here instead and names the split. */}}
+     global.imageRegistry value redirects them all. A registry with a path is
+     otherwise legitimate (a Harbor/Nexus/Artifactory pull-through mirror
+     re-exposes upstream registries under a path, e.g.
+     mirror.example:8083/ghcr.io), so the guard only catches the one shape a
+     values file migrating from the old layout would actually produce: registry
+     still ending in exactly the current image.repository, e.g.
+     ghcr.io/kagent-dev/substrate with repository kagent-dev/substrate. That
+     doubled prefix would otherwise fail only at pod start, so it fails the
+     render here instead and names the split. */}}
 {{- /* A scheme'd registry (ko://...) is hack/render-manifests.sh passing an
      importpath prefix for `ko resolve` to substitute, same as the "<none>" tag
      sentinel below -- unambiguously not the old host+path shape, so the guard
      lets it through. */ -}}
-{{- if and (contains "/" $ctx.Values.image.registry) (not (contains "://" $ctx.Values.image.registry)) -}}
-{{- fail (printf "image.registry (%q) carries a path. It is now the registry host only: keep the path in image.repository, e.g. registry: ghcr.io, repository: kagent-dev/substrate." $ctx.Values.image.registry) -}}
+{{- if and (not (contains "://" $ctx.Values.image.registry)) (hasSuffix (printf "/%s" $ctx.Values.image.repository) $ctx.Values.image.registry) -}}
+{{- fail (printf "image.registry (%q) still carries the old %q path. It is now the registry host only: keep the path in image.repository, e.g. registry: ghcr.io, repository: kagent-dev/substrate." $ctx.Values.image.registry $ctx.Values.image.repository) -}}
 {{- end -}}
 {{- $registry := printf "%s/%s" (default $ctx.Values.image.registry (($ctx.Values.global).imageRegistry)) $ctx.Values.image.repository -}}
 {{- $tag := $ctx.Values.image.tag | default $ctx.Chart.AppVersion -}}
