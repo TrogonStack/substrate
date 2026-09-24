@@ -227,3 +227,22 @@ spec:
     protocol: TCP
     port: 443
     targetPort: 443
+{{- if .Values.metrics.podMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "substrate.fullname" (list "ate-api-server-podmonitor" .) }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: ate-api-server
+{{- with .Values.metrics.podMonitor.labels }}
+{{- toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: ate-api-server
+  podMetricsEndpoints:
+  - port: prometheus
+{{- end }}

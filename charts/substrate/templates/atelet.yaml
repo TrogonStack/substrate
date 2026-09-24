@@ -230,3 +230,22 @@ spec:
                 matchLabels:
                   podcert.ate.dev/canarying: live
               path: trust-bundle.pem
+{{- if .Values.metrics.podMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "substrate.fullname" (list "atelet-podmonitor" .) }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: atelet
+{{- with .Values.metrics.podMonitor.labels }}
+{{- toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: atelet
+  podMetricsEndpoints:
+  - port: prometheus
+{{- end }}

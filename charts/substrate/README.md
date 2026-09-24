@@ -57,3 +57,5 @@ See `values.yaml` for the full set; the important keys:
 | `otel.metrics.endpoint` | `""` | OTLP endpoint for metrics, overriding `otel.endpoint` |
 | `otel.logs.enabled` | `true` | Set to `false` to export no logs. Gates both OTLP log sources: ateapi's actor lifecycle events and the router access log |
 | `otel.logs.endpoint` | `""` | OTLP endpoint for logs, overriding `otel.endpoint` |
+| `metrics.podMonitor.enabled` | `false` | Create PodMonitor resources for ate-api-server, atelet, and atenet-router; requires the prometheus-operator CRDs installed in the cluster |
+| `metrics.podMonitor.labels` | `{}` | Labels merged onto each PodMonitor's metadata, e.g. `release: prometheus` |

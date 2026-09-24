@@ -381,3 +381,23 @@ spec:
     port: 15020
     targetPort: gw-metrics
     protocol: TCP
+{{- if .Values.metrics.podMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "substrate.fullname" (list "atenet-router-podmonitor" .) }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: atenet-router
+{{- with .Values.metrics.podMonitor.labels }}
+{{- toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: atenet-router
+  podMetricsEndpoints:
+  - port: metrics
+  - port: gw-metrics
+{{- end }}

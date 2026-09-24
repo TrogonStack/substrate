@@ -92,6 +92,18 @@ otel:
     enabled: true
     endpoint: ""
 
+# Prometheus scraping via the prometheus-operator PodMonitor CRD, for
+# ate-api-server, atelet, and atenet-router. Off by default so clusters
+# without prometheus-operator installed can still render this chart.
+metrics:
+  podMonitor:
+    # -- Requires the prometheus-operator CRDs installed in the cluster.
+    enabled: false
+    # -- Labels merged onto each PodMonitor's metadata.labels, e.g. the
+    # `release: prometheus` label a prometheus-operator install's
+    # PodMonitorSelector typically requires to pick the PodMonitor up.
+    labels: {}
+
 # Values under `global` are visible to this chart and to every subchart. A parent
 # chart or an operator sets one value here instead of one value per chart.
 global:
