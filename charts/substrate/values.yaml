@@ -57,6 +57,18 @@ atelet:
 # Additional arguments appended to the ateapi defaults.
 ateApi:
   extraArgs: []
+  # authentication controls the ate-api-authentication ConfigMap that
+  # ate-api-server reads its --authentication-config from.
+  #
+  # mode: external (default) - the chart does not render the ConfigMap;
+  #   something else (ate-setup create api-authentication-config, or a
+  #   hand-applied manifest) must create it before ate-api-server starts.
+  # mode: managed - the chart renders the ConfigMap from the fields below.
+  authentication:
+    mode: external
+    issuer: https://kubernetes.default.svc
+    audiences: ["api.ate-system.svc"]
+    attachServiceAccountCA: true
 
 # Kubernetes Secret provider and AGW HTTP/HTTPS credential injection.
 # Includes get-only Secret RBAC. HTTPS requires egress-mitm-ca-pool and actor trust.

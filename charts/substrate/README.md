@@ -24,6 +24,14 @@ interception. Create the `egress-mitm-ca-pool` Secret and configure actor trust
 as described in the [credential provider setup](../../docs/kubernetes-credential-provider.md).
 Namespace grants default to an empty list, denying credential access.
 
+By default the chart does not render the `ate-api-authentication` ConfigMap
+that `ate-api-server` reads its JWT trust config from; something else
+(`ate-setup create api-authentication-config`, or a hand-applied manifest)
+must create it before the deployment starts. Set `ateApi.authentication.mode`
+to `managed` to have the chart render it instead, from
+`ateApi.authentication.issuer`, `ateApi.authentication.audiences`, and
+`ateApi.authentication.attachServiceAccountCA`.
+
 ## Render manifests without applying
 
 ```bash
@@ -49,6 +57,10 @@ See `values.yaml` for the full set; the important keys:
 | `atelet.gcpAuthForImagePulls` | `false` | Enable only when using GCP registry auth |
 | `credentialProvider.namespacePolicies` | `[]` | Default-deny atespace-to-namespace grants; the chart includes get-only Secret RBAC for the provider |
 | `ateApi.extraArgs` | `[]` | Additional command-line arguments appended to the ateapi defaults |
+| `ateApi.authentication.mode` | `external` | `external` leaves the `ate-api-authentication` ConfigMap to be created outside the chart; `managed` renders it from the fields below |
+| `ateApi.authentication.issuer` | `https://kubernetes.default.svc` | Service account token issuer `ate-api-server` trusts, when `mode=managed` |
+| `ateApi.authentication.audiences` | `["api.ate-system.svc"]` | Audiences `ate-api-server` accepts tokens for, when `mode=managed` |
+| `ateApi.authentication.attachServiceAccountCA` | `true` | Point the JWT provider at the pod's own service account CA and token, needed for the in-cluster issuer's OIDC discovery; when `mode=managed` |
 | `otel.endpoint` | `""` | Set to an OTLP endpoint to export traces, metrics, the actor lifecycle events and the router access log |
 | `otel.traces.enabled` | `true` | Set to `false` to export no traces from the router; the Go components do not honor this yet |
 | `otel.traces.endpoint` | `""` | OTLP endpoint for traces, overriding `otel.endpoint` |
