@@ -17,6 +17,7 @@ package steps
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -130,7 +131,8 @@ func (e *Env) CreateAPIAuthenticationConfig(ctx context.Context) error {
 		return err
 	}
 
-	authnConfig := buildAuthenticationConfig(e.jwtIssuer(ctx))
+	issuer := e.jwtIssuer(ctx)
+	authnConfig := buildAuthenticationConfig(issuer, issuerIsOwnAPIServer(issuer, e.Kube.Config.Host))
 	// The issuer decides which tokens the apiserver accepts at all, and a
 	// wrong one fails as an opaque 401 much later, so show what was written.
 	log.Infof("%s authentication.yaml:", ConfigMapAPIAuthn)
@@ -170,15 +172,18 @@ const inClusterIssuer = "https://kubernetes.default.svc"
 
 // buildAuthenticationConfig renders authentication.yaml.
 //
-// An in-cluster issuer is not reachable over public discovery, so the apiserver
-// is pointed at its own projected service account CA and token to complete the
-// OIDC discovery handshake. A GKE or otherwise external issuer needs neither.
-func buildAuthenticationConfig(issuer string) string {
+// An issuer served by our own apiserver is not reachable over public
+// discovery, so the apiserver is pointed at its own projected service account
+// CA and token to complete the OIDC discovery handshake. A GKE or otherwise
+// external issuer needs neither, and must not get them: certificateAuthorityFile
+// replaces the discovery client's whole trust store, so handing it our
+// apiserver's private CA would break verification of an issuer with a real,
+// publicly trusted certificate.
+func buildAuthenticationConfig(issuer string, isOwnAPIServer bool) string {
 	config := fmt.Sprintf(
 		"actorIdentityJWTProvider: kubernetes\njwtProviders:\n- name: kubernetes\n  issuer: %s\n  audiences: [api.ate-system.svc]\n",
 		issuer)
-	switch issuer {
-	case inClusterIssuer, inClusterIssuer + ".cluster.local":
+	if isOwnAPIServer || issuer == inClusterIssuer || issuer == inClusterIssuer+".cluster.local" {
 		config += "  certificateAuthorityFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n" +
 			"  discoveryTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token\n"
 	}
@@ -186,6 +191,41 @@ func buildAuthenticationConfig(issuer string) string {
 	// newlines. Matching that keeps the ConfigMap byte-identical, so switching
 	// between the two installers does not rewrite it.
 	return strings.TrimRight(config, "\n")
+}
+
+// issuerIsOwnAPIServer reports whether issuer is served by the apiserver at
+// apiServerHost, a rest.Config.Host value. jwtIssuer's discovery path resolves
+// the issuer by asking that same apiserver, so on a cluster without a public
+// discovery document (Talos, kubeadm) the issuer it finds is the apiserver's
+// own reachable URL rather than the https://kubernetes.default.svc literal.
+func issuerIsOwnAPIServer(issuer, apiServerHost string) bool {
+	if issuer == "" || apiServerHost == "" {
+		return false
+	}
+	issuerURL, err := url.Parse(issuer)
+	if err != nil || issuerURL.Host == "" {
+		return false
+	}
+	hostURL := parseAPIServerHost(apiServerHost)
+	if hostURL == nil {
+		return false
+	}
+	return strings.EqualFold(issuerURL.Host, hostURL.Host)
+}
+
+// parseAPIServerHost parses a rest.Config.Host value. client-go accepts that
+// field as a bare host, a host:port pair, or a full URL, and only fills in a
+// scheme when the value is actually used, so the same "URL first, else
+// https://<host>" fallback rest.DefaultServerURL applies is repeated here.
+func parseAPIServerHost(host string) *url.URL {
+	if u, err := url.Parse(host); err == nil && u.Scheme != "" && u.Host != "" {
+		return u
+	}
+	u, err := url.Parse("https://" + host)
+	if err != nil {
+		return nil
+	}
+	return u
 }
 
 // createCAPool generates a CA pool and stores it in a Secret.

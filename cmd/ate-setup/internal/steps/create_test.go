@@ -54,9 +54,10 @@ func TestBuildAPIServerEnvVars(t *testing.T) {
 // diff rather than as an apiserver that silently trusts the wrong issuer.
 func TestBuildAuthenticationConfig(t *testing.T) {
 	for _, tc := range []struct {
-		name   string
-		issuer string
-		want   string
+		name           string
+		issuer         string
+		isOwnAPIServer bool
+		want           string
 	}{
 		{
 			name:   "external issuer needs no discovery credentials",
@@ -89,10 +90,84 @@ func TestBuildAuthenticationConfig(t *testing.T) {
 				"  certificateAuthorityFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n" +
 				"  discoveryTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token",
 		},
+		{
+			name:           "apiserver-shaped issuer that is this cluster's own apiserver projects the service account CA and token",
+			issuer:         "https://10.0.1.5:6443",
+			isOwnAPIServer: true,
+			want: "actorIdentityJWTProvider: kubernetes\n" +
+				"jwtProviders:\n" +
+				"- name: kubernetes\n" +
+				"  issuer: https://10.0.1.5:6443\n" +
+				"  audiences: [api.ate-system.svc]\n" +
+				"  certificateAuthorityFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n" +
+				"  discoveryTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token",
+		},
+		{
+			name:           "apiserver-shaped issuer that is a different cluster's apiserver needs no discovery credentials",
+			issuer:         "https://10.0.9.9:6443",
+			isOwnAPIServer: false,
+			want: "actorIdentityJWTProvider: kubernetes\n" +
+				"jwtProviders:\n" +
+				"- name: kubernetes\n" +
+				"  issuer: https://10.0.9.9:6443\n" +
+				"  audiences: [api.ate-system.svc]",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := buildAuthenticationConfig(tc.issuer); got != tc.want {
-				t.Errorf("buildAuthenticationConfig(%q) =\n%q\nwant\n%q", tc.issuer, got, tc.want)
+			if got := buildAuthenticationConfig(tc.issuer, tc.isOwnAPIServer); got != tc.want {
+				t.Errorf("buildAuthenticationConfig(%q, %v) =\n%q\nwant\n%q", tc.issuer, tc.isOwnAPIServer, got, tc.want)
+			}
+		})
+	}
+}
+
+// jwtIssuer resolves the issuer by asking e.Kube, the very apiserver
+// buildAuthenticationConfig needs to recognize as "us" on clusters like Talos
+// or kubeadm that discover their own reachable URL rather than the
+// kubernetes.default.svc literal. isOwnAPIServer decides that from
+// rest.Config.Host, so it has to say yes for that shape and no for any other
+// apiserver-shaped issuer, or a wrong cluster's CA would end up trusted.
+func TestIssuerIsOwnAPIServer(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		issuer        string
+		apiServerHost string
+		want          bool
+	}{
+		{
+			name:          "matches this cluster's apiserver URL",
+			issuer:        "https://10.0.1.5:6443",
+			apiServerHost: "https://10.0.1.5:6443",
+			want:          true,
+		},
+		{
+			name:          "does not match another cluster's apiserver URL",
+			issuer:        "https://10.0.9.9:6443",
+			apiServerHost: "https://10.0.1.5:6443",
+			want:          false,
+		},
+		{
+			name:          "external issuer never matches",
+			issuer:        "https://container.googleapis.com/v1/projects/p/locations/l/clusters/c",
+			apiServerHost: "https://10.0.1.5:6443",
+			want:          false,
+		},
+		{
+			name:          "apiserver host without a scheme defaults to https",
+			issuer:        "https://10.0.1.5:6443",
+			apiServerHost: "10.0.1.5:6443",
+			want:          true,
+		},
+		{
+			name:          "in-cluster issuer matches an in-cluster Config.Host",
+			issuer:        inClusterIssuer,
+			apiServerHost: inClusterIssuer,
+			want:          true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := issuerIsOwnAPIServer(tc.issuer, tc.apiServerHost); got != tc.want {
+				t.Errorf("issuerIsOwnAPIServer(%q, %q) = %v, want %v", tc.issuer, tc.apiServerHost, got, tc.want)
 			}
 		})
 	}
