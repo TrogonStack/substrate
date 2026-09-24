@@ -231,6 +231,9 @@ spec:
       name: data
     spec:
       accessModes: ["ReadWriteOnce"]
+      {{- with .Values.postgres.storageClassName }}
+      storageClassName: {{ . }}
+      {{- end }}
       resources:
         requests:
           storage: {{ .Values.postgres.storageSize }}

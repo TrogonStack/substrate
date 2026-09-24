@@ -23,6 +23,9 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
+  {{- with .Values.rustfs.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
   resources:
     requests:
       storage: {{ .Values.rustfs.storageSize }}

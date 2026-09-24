@@ -26,6 +26,8 @@ createNamespace: false
 postgres:
   enabled: true
   storageSize: 1Gi
+  # StorageClass for the PostgreSQL PVC. Empty string uses the cluster default.
+  storageClassName: ""
   connectionString: ""
   schema: public
   resources:
@@ -39,6 +41,8 @@ postgres:
 rustfs:
   enabled: true
   storageSize: 1Gi
+  # StorageClass for the RustFS PVC. Empty string uses the cluster default.
+  storageClassName: ""
   bucket: ate-snapshots
   accessKey: rustfsadmin
   secretKey: rustfsadmin
