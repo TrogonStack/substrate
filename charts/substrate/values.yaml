@@ -23,6 +23,13 @@
 # manifests/ate-install/ install path (kubectl apply).
 createNamespace: false
 
+# Labels applied to the namespace when createNamespace is true. Empty by
+# default: the chart doesn't force a pod-security level on a namespace it
+# doesn't fully own. Clusters enforcing Pod Security Admission need
+# pod-security.kubernetes.io/enforce: privileged (and matching -audit/-warn
+# if desired) set here, because atelet runs its container privileged.
+namespaceLabels: {}
+
 postgres:
   enabled: true
   storageSize: 1Gi

@@ -19,4 +19,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .Release.Namespace }}
+{{- if .Values.namespaceLabels }}
+  labels:
+    {{- toYaml .Values.namespaceLabels | nindent 4 }}
+{{- end }}
 {{- end }}
