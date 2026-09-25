@@ -49,6 +49,10 @@ See `values.yaml` for the full set; the important keys:
 | `atelet.gcpAuthForImagePulls` | `false` | Enable only when using GCP registry auth |
 | `credentialProvider.namespacePolicies` | `[]` | Default-deny atespace-to-namespace grants; the chart includes get-only Secret RBAC for the provider |
 | `ateApi.extraArgs` | `[]` | Additional command-line arguments appended to the ateapi defaults |
+| `podCertificateController.namespace.name` | `podcertificate-controller-system` | Namespace the podcertificate controller runs in |
+| `podCertificateController.namespace.create` | `true` | Set to `false` when this namespace is already declared elsewhere (e.g. GitOps), so the chart does not also try to own it |
+| `podCertificateController.namespace.labels` | `{}` | Labels applied to the namespace when `create` is `true` |
+| `podCertificateController.namespace.annotations` | `{}` | Annotations applied to the namespace when `create` is `true` |
 | `otel.endpoint` | `""` | Set to an OTLP endpoint to export traces, metrics, the actor lifecycle events and the router access log |
 | `otel.traces.enabled` | `true` | Set to `false` to export no traces from the router; the Go components do not honor this yet |
 | `otel.traces.endpoint` | `""` | OTLP endpoint for traces, overriding `otel.endpoint` |

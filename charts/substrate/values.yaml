@@ -58,6 +58,21 @@ atelet:
 ateApi:
   extraArgs: []
 
+# The podcertificate controller issues the servicedns and podidentity
+# certificates every other component depends on, so it runs in its own
+# namespace rather than the release namespace.
+podCertificateController:
+  namespace:
+    # Name of the namespace. Change this only alongside
+    # ATE_PODCERT_NAMESPACE, since ate-setup's manifest-applying steps refuse
+    # a mismatch between the two.
+    name: podcertificate-controller-system
+    # Set to false when this namespace is already declared elsewhere (e.g. a
+    # GitOps setup that pre-creates it), so the chart does not also try to own it.
+    create: true
+    labels: {}
+    annotations: {}
+
 # Kubernetes Secret provider and AGW HTTP/HTTPS credential injection.
 # Includes get-only Secret RBAC. HTTPS requires egress-mitm-ca-pool and actor trust.
 credentialProvider:

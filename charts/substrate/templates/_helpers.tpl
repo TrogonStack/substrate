@@ -69,6 +69,15 @@ consumption as ATE_API_ENDPOINT / --ateapi-address:
 {{- end -}}
 
 {{/*
+Namespace the podcertificate controller runs in.
+
+  {{ include "substrate.podCertNamespace" . }}
+*/}}
+{{- define "substrate.podCertNamespace" -}}
+{{- .Values.podCertificateController.namespace.name -}}
+{{- end -}}
+
+{{/*
 Plaintext HTTP URL that clients use to reach atenet-router.
 
   {{ include "substrate.atenetRouter.url" . }}

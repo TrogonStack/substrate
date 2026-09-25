@@ -14,11 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
+{{- if .Values.podCertificateController.namespace.create }}
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: podcertificate-controller-system
+  name: {{ include "substrate.podCertNamespace" . }}
+{{- if .Values.podCertificateController.namespace.labels }}
+  labels:
+    {{- toYaml .Values.podCertificateController.namespace.labels | nindent 4 }}
+{{- end }}
+{{- if .Values.podCertificateController.namespace.annotations }}
+  annotations:
+    {{- toYaml .Values.podCertificateController.namespace.annotations | nindent 4 }}
+{{- end }}
 ---
+{{- end }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -87,13 +97,13 @@ roleRef:
   name: {{ include "substrate.fullname" (list "podcert-ate-dev-signer" .) }}
 subjects:
 - kind: ServiceAccount
-  namespace: podcertificate-controller-system
+  namespace: {{ include "substrate.podCertNamespace" . }}
   name: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: podcertificate-controller-system
+  namespace: {{ include "substrate.podCertNamespace" . }}
   name: coordinator
 rules:
 - apiGroups:
@@ -112,21 +122,21 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: podcertificate-controller-is-a-coordinator
-  namespace: podcertificate-controller-system
+  namespace: {{ include "substrate.podCertNamespace" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: coordinator
 subjects:
 - kind: ServiceAccount
-  namespace: podcertificate-controller-system
+  namespace: {{ include "substrate.podCertNamespace" . }}
   name: default
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: podcertificate-controller
-  namespace: podcertificate-controller-system
+  namespace: {{ include "substrate.podCertNamespace" . }}
   labels:
     app: podcertificate-controller
 spec:
