@@ -43,7 +43,7 @@ func (e *Env) EnsureAPIServerPrerequisites(ctx context.Context) error {
 	if err := e.ensureSecret(ctx, e.Namespace(), SecretActorIDCACerts, e.CreateActorIDCACertsSecret); err != nil {
 		return err
 	}
-	if err := e.ensureSecret(ctx, NamespacePodCert, SecretServiceDNSCA, e.CreatePodCertificateControllerCAs); err != nil {
+	if err := e.ensureSecret(ctx, e.PodCertNamespace(), SecretServiceDNSCA, e.CreatePodCertificateControllerCAs); err != nil {
 		return err
 	}
 	// Always reconcile the PostgreSQL connection settings, so that a changed
@@ -66,7 +66,7 @@ func (e *Env) EnsureAPIServerPrerequisites(ctx context.Context) error {
 // missing.
 func (e *Env) EnsurePodCertificateCAs(ctx context.Context) error {
 	for _, name := range []string{SecretServiceDNSCA, SecretPodIdentityCA} {
-		exists, err := e.Kube.SecretExists(ctx, NamespacePodCert, name)
+		exists, err := e.Kube.SecretExists(ctx, e.PodCertNamespace(), name)
 		if err != nil {
 			return err
 		}

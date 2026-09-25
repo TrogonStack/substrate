@@ -54,6 +54,11 @@ const DefaultPostgresConnectionString = "postgresql://postgres@postgres.ate-syst
 // ATE_API_POSTGRES_SCHEMA, the PostgreSQL schema holding the Substrate tables.
 const DefaultPostgresSchema = "public"
 
+// DefaultPodCertNamespace is the canonical namespace the podcertificate
+// controller runs in, matching manifests/ate-install/pod-certificate-controller.yaml
+// and steps.NamespacePodCert.
+const DefaultPodCertNamespace = "podcertificate-controller-system"
+
 // Cloud SQL Auth Proxy IP types, the values ATE_API_POSTGRES_CLOUDSQL_IP_TYPE
 // accepts.
 const (
@@ -81,6 +86,14 @@ type Config struct {
 	// under manifests/ate-install/ name that namespace literally, so the
 	// manifest-applying steps refuse any other value; see Env.RequireCanonicalNamespace.
 	Namespace string
+
+	// PodCertNamespace is the namespace the podcertificate controller and its
+	// signer CA pools run in, from ATE_PODCERT_NAMESPACE. It defaults to
+	// DefaultPodCertNamespace, so an install that does not set it is
+	// unaffected. The checked-in manifests/ate-install/pod-certificate-controller.yaml
+	// names that namespace literally, so the manifest-applying steps refuse any
+	// other value; see Env.RequirePodCertCanonicalNamespace.
+	PodCertNamespace string
 
 	// Kubeconfig and Context select the target cluster. Empty Context means
 	// "use the current context" (the KUBECTL_CONTEXT convention).
@@ -310,6 +323,7 @@ func Load(opts Options) (*Config, error) {
 		Root:                     root,
 		Kind:                     kind,
 		Namespace:                firstNonEmpty(env["ATE_NAMESPACE"], installdefaults.SystemNamespace),
+		PodCertNamespace:         firstNonEmpty(env["ATE_PODCERT_NAMESPACE"], DefaultPodCertNamespace),
 		Kubeconfig:               kubeconfig,
 		Context:                  firstNonEmpty(opts.Context, env["KUBECTL_CONTEXT"]),
 		ProjectID:                env["PROJECT_ID"],

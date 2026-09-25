@@ -81,6 +81,11 @@ func (e *Env) applyPostgresManifest(ctx context.Context) error {
 func (e *Env) DeployPostgres(ctx context.Context) error {
 	log.Step("deploy_postgres")
 
+	// This step applies the checked-in pod-certificate-controller.yaml, so it
+	// refuses a relocated podcert namespace before creating anything.
+	if err := e.RequirePodCertCanonicalNamespace("deploy postgres"); err != nil {
+		return err
+	}
 	if err := e.EnsureAteSystemNamespace(ctx); err != nil {
 		return err
 	}
@@ -97,7 +102,7 @@ func (e *Env) DeployPostgres(ctx context.Context) error {
 	if err := e.applyPodcertWorkersOverride(ctx); err != nil {
 		return err
 	}
-	if err := e.Kube.RolloutStatus(ctx, kube.KindDeployment, NamespacePodCert, "podcertificate-controller", e.Cfg.WaitTimeout(BootstrapTimeout)); err != nil {
+	if err := e.Kube.RolloutStatus(ctx, kube.KindDeployment, e.PodCertNamespace(), "podcertificate-controller", e.Cfg.WaitTimeout(BootstrapTimeout)); err != nil {
 		return err
 	}
 	if err := e.WaitForPodCertificateTrustBundles(ctx); err != nil {

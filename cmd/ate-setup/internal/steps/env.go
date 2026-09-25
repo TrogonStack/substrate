@@ -100,6 +100,28 @@ func (e *Env) RequireCanonicalNamespace(step string) error {
 	return nil
 }
 
+// PodCertNamespace is the namespace the podcertificate controller and its
+// signer CA pools run in. It is Config.PodCertNamespace, which defaults to
+// NamespacePodCert.
+func (e *Env) PodCertNamespace() string {
+	if e.Cfg != nil && e.Cfg.PodCertNamespace != "" {
+		return e.Cfg.PodCertNamespace
+	}
+	return NamespacePodCert
+}
+
+// RequirePodCertCanonicalNamespace refuses a relocated podcert namespace for
+// the steps that apply the checked-in pod-certificate-controller.yaml
+// manifest. That manifest names podcertificate-controller-system literally,
+// so proceeding would put the controller there while this tool created its
+// secrets and CA pools somewhere else.
+func (e *Env) RequirePodCertCanonicalNamespace(step string) error {
+	if ns := e.PodCertNamespace(); ns != NamespacePodCert {
+		return fmt.Errorf("%s cannot be used with ATE_PODCERT_NAMESPACE=%s: manifests/ate-install/pod-certificate-controller.yaml names %s literally; install into another namespace with a deployment that renders it, and use ate-setup only for the create steps", step, ns, NamespacePodCert)
+	}
+	return nil
+}
+
 // NewEnv connects to the cluster described by cfg.
 func NewEnv(cfg *config.Config) (*Env, error) {
 	client, err := kube.New(cfg.Kubeconfig, cfg.Context)

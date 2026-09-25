@@ -170,6 +170,11 @@ func (e *Env) SetupCSI(ctx context.Context, driver string) error {
 // where none of it need be present; every step is an apply or a wait that
 // returns immediately when the work is already done.
 func (e *Env) ensureCSIPrerequisites(ctx context.Context) error {
+	// This step applies the checked-in pod-certificate-controller.yaml, so it
+	// refuses a relocated podcert namespace before creating anything.
+	if err := e.RequirePodCertCanonicalNamespace("setup csi"); err != nil {
+		return err
+	}
 	if err := e.EnsureCRDs(ctx); err != nil {
 		return err
 	}
@@ -185,7 +190,7 @@ func (e *Env) ensureCSIPrerequisites(ctx context.Context) error {
 	if err := e.applyPodcertWorkersOverride(ctx); err != nil {
 		return err
 	}
-	if err := e.Kube.RolloutStatus(ctx, kube.KindDeployment, NamespacePodCert, "podcertificate-controller", e.Cfg.WaitTimeout(BootstrapTimeout)); err != nil {
+	if err := e.Kube.RolloutStatus(ctx, kube.KindDeployment, e.PodCertNamespace(), "podcertificate-controller", e.Cfg.WaitTimeout(BootstrapTimeout)); err != nil {
 		return err
 	}
 	return e.WaitForPodCertificateTrustBundles(ctx)

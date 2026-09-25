@@ -66,6 +66,9 @@ func (e *Env) DeployAteSystem(ctx context.Context, opts DeployOptions) error {
 	if err := e.RequireCanonicalNamespace("deploy ate-system"); err != nil {
 		return err
 	}
+	if err := e.RequirePodCertCanonicalNamespace("deploy ate-system"); err != nil {
+		return err
+	}
 	// Fail fast on an unusable build version before touching the cluster.
 	if _, _, err := e.SubstrateVersion(); err != nil {
 		return err
@@ -107,7 +110,7 @@ func (e *Env) DeployAteSystem(ctx context.Context, opts DeployOptions) error {
 	if err := e.applyPodcertWorkersOverride(ctx); err != nil {
 		return err
 	}
-	if err := e.Kube.RolloutStatus(ctx, kube.KindDeployment, NamespacePodCert, "podcertificate-controller", e.Cfg.WaitTimeout(BootstrapTimeout)); err != nil {
+	if err := e.Kube.RolloutStatus(ctx, kube.KindDeployment, e.PodCertNamespace(), "podcertificate-controller", e.Cfg.WaitTimeout(BootstrapTimeout)); err != nil {
 		return err
 	}
 	if err := e.WaitForPodCertificateTrustBundles(ctx); err != nil {
@@ -207,7 +210,7 @@ func (e *Env) applyPodcertWorkersOverride(ctx context.Context) error {
 		return nil
 	}
 	workers := strconv.Itoa(e.Cfg.PodcertWorkersPerSigner)
-	dep, err := e.Kube.Typed.AppsV1().Deployments(NamespacePodCert).Get(ctx, "podcertificate-controller", metav1.GetOptions{})
+	dep, err := e.Kube.Typed.AppsV1().Deployments(e.PodCertNamespace()).Get(ctx, "podcertificate-controller", metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil
@@ -237,7 +240,7 @@ func (e *Env) applyPodcertWorkersOverride(ctx context.Context) error {
 	}
 
 	log.Infof("Overriding WORKERS_PER_SIGNER with %s", workers)
-	_, err = e.Kube.Typed.AppsV1().Deployments(NamespacePodCert).Update(ctx, dep, metav1.UpdateOptions{})
+	_, err = e.Kube.Typed.AppsV1().Deployments(e.PodCertNamespace()).Update(ctx, dep, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("updating podcertificate-controller WORKERS_PER_SIGNER: %w", err)
 	}

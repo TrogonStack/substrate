@@ -96,13 +96,13 @@ func (e *Env) EnsureEgressMITMCAPoolSecret(ctx context.Context) error {
 // podcertificate controller issues from.
 func (e *Env) CreatePodCertificateControllerCAs(ctx context.Context) error {
 	log.Step("create_podcertificate_controller_cas")
-	if err := e.Kube.EnsureNamespace(ctx, NamespacePodCert); err != nil {
+	if err := e.Kube.EnsureNamespace(ctx, e.PodCertNamespace()); err != nil {
 		return err
 	}
-	if err := e.createCAPool(ctx, NamespacePodCert, SecretServiceDNSCA); err != nil {
+	if err := e.createCAPool(ctx, e.PodCertNamespace(), SecretServiceDNSCA); err != nil {
 		return err
 	}
-	return e.createCAPool(ctx, NamespacePodCert, SecretPodIdentityCA)
+	return e.createCAPool(ctx, e.PodCertNamespace(), SecretPodIdentityCA)
 }
 
 // CreateActorIDCACertsSecret derives a certificate-only trust bundle from the

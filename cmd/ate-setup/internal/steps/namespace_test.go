@@ -65,3 +65,48 @@ func TestRequireCanonicalNamespace(t *testing.T) {
 		}
 	})
 }
+
+func TestEnvPodCertNamespace(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *config.Config
+		want string
+	}{
+		{"falls back to the canonical namespace when unset", &config.Config{}, NamespacePodCert},
+		{"uses the configured namespace", &config.Config{PodCertNamespace: "ate-podcert-system"}, "ate-podcert-system"},
+		{"tolerates a nil config", nil, NamespacePodCert},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Env{Cfg: tt.cfg}
+			if got := e.PodCertNamespace(); got != tt.want {
+				t.Errorf("PodCertNamespace() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// manifests/ate-install/pod-certificate-controller.yaml names
+// podcertificate-controller-system literally, so the steps that apply it
+// must refuse any other namespace rather than scatter the install across two.
+func TestRequirePodCertCanonicalNamespace(t *testing.T) {
+	t.Run("permits the canonical namespace", func(t *testing.T) {
+		e := &Env{Cfg: &config.Config{PodCertNamespace: NamespacePodCert}}
+		if err := e.RequirePodCertCanonicalNamespace("deploy ate-system"); err != nil {
+			t.Errorf("RequirePodCertCanonicalNamespace() = %v, want nil", err)
+		}
+	})
+
+	t.Run("refuses a relocated namespace and names both the step and the value", func(t *testing.T) {
+		e := &Env{Cfg: &config.Config{PodCertNamespace: "ate-podcert-system"}}
+		err := e.RequirePodCertCanonicalNamespace("deploy ate-system")
+		if err == nil {
+			t.Fatal("RequirePodCertCanonicalNamespace() = nil, want an error")
+		}
+		for _, want := range []string{"deploy ate-system", "ate-podcert-system", NamespacePodCert} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("error %q does not mention %q", err, want)
+			}
+		}
+	})
+}
