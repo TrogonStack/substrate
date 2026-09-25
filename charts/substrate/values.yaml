@@ -27,6 +27,11 @@ postgres:
   enabled: true
   storageSize: 1Gi
   connectionString: ""
+  # Reference a Secret holding the connection string instead of setting
+  # connectionString in plain text. Mutually exclusive with connectionString.
+  existingSecret:
+    name: ""
+    key: uri
   schema: public
   resources:
     requests:

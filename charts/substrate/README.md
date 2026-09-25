@@ -41,7 +41,9 @@ See `values.yaml` for the full set; the important keys:
 | Key | Default | Notes |
 |-----|---------|-------|
 | `postgres.enabled` | `true` | Deploy the bundled PostgreSQL instance |
-| `postgres.connectionString` | `""` (in-cluster) | Override to use external PostgreSQL |
+| `postgres.connectionString` | `""` (in-cluster) | Override to use external PostgreSQL. Mutually exclusive with `postgres.existingSecret.name` |
+| `postgres.existingSecret.name` | `""` | Name of a Secret holding the external PostgreSQL connection string. Mutually exclusive with `postgres.connectionString` |
+| `postgres.existingSecret.key` | `uri` | Key in `postgres.existingSecret.name` holding the connection string (CNPG's app Secret uses `uri`) |
 | `postgres.schema` | `public` | Store the Substrate tables in this PostgreSQL schema |
 | `postgres.storageSize` | `1Gi` | In-cluster PostgreSQL PVC size |
 | `rustfs.enabled` | `true` | Deploy an in-cluster S3-compatible RustFS bucket for snapshots |

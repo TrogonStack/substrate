@@ -130,6 +130,13 @@ spec:
         - name: AWS_SECRET_ACCESS_KEY
           value: {{ .Values.rustfs.secretKey | quote }}
 {{- end }}
+{{- if .Values.postgres.existingSecret.name }}
+        - name: ATE_API_POSTGRES_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.postgres.existingSecret.name }}
+              key: {{ .Values.postgres.existingSecret.key }}
+{{- end }}
         envFrom:
         - configMapRef:
             name: {{ .Values.ateApiServerEnvVarsConfigMap }}
